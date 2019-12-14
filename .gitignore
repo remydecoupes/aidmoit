@@ -1,2 +1,9 @@
 ###LibreOffice backup files###
-input/.~.*
+input/.~
+input/.~lock.datasources.csv#
+
+###VirtualEnv Py###
+venv/
+
+###IDE Pychamr###
+.idea/
