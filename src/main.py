@@ -12,13 +12,16 @@ Step :
 """
 import os
 import re
+import urllib.request
+import pandas as pd
 import requests
-import urllib
+import json
+
 
 def getUrlFromOpendata3M(inputCSV):
     """
     Data from 3M opendata website are collected in 4 steps :
-        1/ Parse Rodrique's rapport (in latex) and find Rodrique's table of data inventory
+        1/ Parse CSV
         2/ From this file, get all links to 3M opendata website
         3/ For each link get the 3M ID of dataset
         4/ For each 3M dataset's ID get url asking 3M opendata's API:
@@ -31,11 +34,8 @@ def getUrlFromOpendata3M(inputCSV):
         " [u'9860']": {'data': [u'http://data.montpellier3m.fr/sites/default/files/ressources/MMM_MMM_PopFine.zip', u'http://data.montpellier3m.fr/sites/default/files/ressources/MMM_MMM_PopFine_Description.docx', u'http://data.montpellier3m.fr/sites/default/files/ressources/MMM_MMM_PopFine_Schema.docx'], 'metadata': [TO BIG TO PRINT for this example!!!]},
     """
     # Step 1 and 2
-    weblinkPattern = re.compile("href{(https{0,1}://data.montpellier3m.fr.*)}{")
-    dataInvetoryFile = open(inputCSV)
-    dataInvetoryFileContent = dataInvetoryFile.read()
-    weblinks = re.findall(weblinkPattern,dataInvetoryFileContent)
-    print(weblinks)
+    dataInvetoryFile = pd.read_csv(inputCSV, sep = ';')
+    weblinks = dataInvetoryFile['datasetURL']
 
     # Step 3
     idNodePattern = re.compile("https{0,1}:..data.montpellier3m.fr.node.(\d+)")
@@ -69,7 +69,7 @@ def downloadOpendata3MFiles(opendata3mDataMetada, pathToSaveDownloadedData):
     nboffiledl = 0
     for node in opendata3mDataMetada:
         for fileToDownoald in opendata3mDataMetada[node]['data']:
-            urllib.urlretrieve(fileToDownoald, os.path.join(pathToSaveDownloadedData, fileToDownoald.split('/')[-1]))
+            urllib.request.urlretrieve(fileToDownoald, os.path.join(pathToSaveDownloadedData, fileToDownoald.split('/')[-1]))
             nboffiledl = nboffiledl + 1
 
     return nboffiledl
@@ -79,7 +79,8 @@ if __name__ == '__main__':
     #Init variables
     dirname = os.path.dirname(__file__)
     inputCSV = os.path.join(dirname, '../input/datasources.csv')
-    pathToSaveDownloadedData = os.path.join(dirname, '../output')
+    pathToSaveDownloadedData = os.path.join(dirname, '../output/data')
+    pathToSaveDownloadedMeta = os.path.join(dirname, '../output/meta/meta.json')
     nboffiledl = 0
     #end of init variables
 
@@ -87,6 +88,9 @@ if __name__ == '__main__':
 
     """Get URL of data and metadata from 3M Opendata website"""
     opendata3mDataMetada = getUrlFromOpendata3M(inputCSV)
+    jsonfile = open(pathToSaveDownloadedMeta, "w")
+    jsonfile.write(json.dumps(opendata3mDataMetada))
+    jsonfile.close()
     """Download File"""
     nboffiledl = downloadOpendata3MFiles(opendata3mDataMetada, pathToSaveDownloadedData)
 
