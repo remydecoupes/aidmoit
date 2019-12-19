@@ -46,15 +46,18 @@ def getUrlFromOpendata3M(inputCSV):
 
      # Step 4
     opendata3mDataMetada = {}
+    idcsv = 1
     for node in idNodeList:
         opendata3mData = []
-        nodeDataMetada = {'metadata': None, 'data': None}
+        nodeDataMetada = {'metadata': None, 'data': None, 'idCSV': idcsv}
         metadata = requests.get("http://data.montpellier3m.fr/api/3/action/package_show?id="+node[0]).json()
         #get resources
         for resource in metadata['result']['resources']:
             opendata3mData.append(resource['url'])
         nodeDataMetada['data'] = opendata3mData
+        nodeDataMetada['metadata'] = metadata
         opendata3mDataMetada.update({str(node): nodeDataMetada})
+        idcsv = idcsv+1
 
     return opendata3mDataMetada
 
@@ -93,6 +96,10 @@ if __name__ == '__main__':
     jsonfile.close()
     """Download File"""
     nboffiledl = downloadOpendata3MFiles(opendata3mDataMetada, pathToSaveDownloadedData)
+
+    """Insert files inside HDFS"""
+
+    """Build and insert iso19139 xml to geonetwork"""
 
     print(str(nboffiledl)+" files downloaded in : " + pathToSaveDownloadedData)
     print("AIDMOIt ingestion module ends")
