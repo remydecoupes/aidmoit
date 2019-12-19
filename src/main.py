@@ -102,7 +102,7 @@ if __name__ == '__main__':
     jsonfile.write(json.dumps(opendata3mDataMetada))
     jsonfile.close()
     """Download File"""
-    # nboffiledl = downloadOpendata3MFiles(opendata3mDataMetada, pathToSaveDownloadedData)
+    nboffiledl = downloadOpendata3MFiles(opendata3mDataMetada, pathToSaveDownloadedData)
 
     """Insert files inside HDFS and store file"""
     # connect to HDFS
@@ -121,7 +121,7 @@ if __name__ == '__main__':
         subprocess.call("/usr/bin/Rscript  addServicesToGN.R")
     except :
         print("R error due to OSM ? Try re-launched")
-        subprocess.call("/usr/bin/Rscript  addServicesToGN.R", shell=True)
+        subprocess.call("R -f addServicesToGN.R", shell=True)
 
     print(str(nboffiledl)+" files downloaded in : " + pathToSaveDownloadedData)
     print("AIDMOIt ingestion module ends")

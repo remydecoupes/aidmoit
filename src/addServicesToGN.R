@@ -7,8 +7,6 @@ library(osmdata)
 library(rjson)
 
 working_dir = getwd()
-print("working on :")
-print(working_dir)
 
 # Connection to geonetwork
 gn <- GNManager$new(
@@ -17,7 +15,6 @@ gn <- GNManager$new(
   user = "admin",
   pwd = "admin"
 )
-print("ici")
 
 ## Read input
 services <- read.csv(file=paste(working_dir, "../input/datasources.csv", sep = "/"), sep =";")
@@ -62,7 +59,7 @@ for (service in services$id) {
     for (node in json_data){
       if(node$idCSV == iterator){
         ressources = basename(node$data)
-        print(str(ressources))
+        # print(str(ressources))
         for (ressource in ressources){
           newURL <- ISOOnlineResource$new()
           newURL$setName(paste0(ressource))
