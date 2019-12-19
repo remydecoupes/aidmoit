@@ -16,6 +16,8 @@ import urllib.request
 import pandas as pd
 import requests
 import json
+from pywebhdfs.webhdfs import PyWebHdfsClient
+import subprocess
 
 
 def getUrlFromOpendata3M(inputCSV):
@@ -84,7 +86,12 @@ if __name__ == '__main__':
     inputCSV = os.path.join(dirname, '../input/datasources.csv')
     pathToSaveDownloadedData = os.path.join(dirname, '../output/data')
     pathToSaveDownloadedMeta = os.path.join(dirname, '../output/meta/meta.json')
+    pathToSaveHDFSPath = os.path.join(dirname, '../output/hdfspath/hdfspath.csv')
     nboffiledl = 0
+
+    namenode = "namenode" # hostname or IP address for HDFS cluster's namenode
+    namenodePort = "9870"
+    hdfsuser = "hadoop"
     #end of init variables
 
     print("AIDMOIt ingestion module starts")
@@ -95,11 +102,26 @@ if __name__ == '__main__':
     jsonfile.write(json.dumps(opendata3mDataMetada))
     jsonfile.close()
     """Download File"""
-    nboffiledl = downloadOpendata3MFiles(opendata3mDataMetada, pathToSaveDownloadedData)
+    # nboffiledl = downloadOpendata3MFiles(opendata3mDataMetada, pathToSaveDownloadedData)
 
-    """Insert files inside HDFS"""
+    """Insert files inside HDFS and store file"""
+    # connect to HDFS
+    hdfs = PyWebHdfsClient(host=namenode, port=namenodePort, user_name=hdfsuser)
+    for file in os.listdir(pathToSaveDownloadedData):
+        if(str(file) != ".forgit"):
+            try:
+                pathInDL = "."
+                file_data = str(file)
+                hdfs.create_file(file_data, pathInDL)
+            except Exception as e:
+                print('Failed to upload in HDFS: '+ str(e))
 
     """Build and insert iso19139 xml to geonetwork"""
+    try:
+        subprocess.call("/usr/bin/Rscript  addServicesToGN.R")
+    except :
+        print("R error due to OSM ? Try re-launched")
+        subprocess.call("/usr/bin/Rscript  addServicesToGN.R", shell=True)
 
     print(str(nboffiledl)+" files downloaded in : " + pathToSaveDownloadedData)
     print("AIDMOIt ingestion module ends")

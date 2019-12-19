@@ -1,23 +1,30 @@
+#! /usr/bin/Rscript
+
 library(geonapi)
 library(geometa)
 library(uuid)
 library(osmdata)
+library(rjson)
 
 working_dir = getwd()
+print("working on :")
+print(working_dir)
 
-## Connection to geonetwork
+# Connection to geonetwork
 gn <- GNManager$new(
   url = "http://10.0.0.9:8080/geonetwork",
   version = "3.6.1",
   user = "admin",
   pwd = "admin"
-  # logger = "DEBUG"
 )
+print("ici")
 
 ## Read input
 services <- read.csv(file=paste(working_dir, "../input/datasources.csv", sep = "/"), sep =";")
+json_data <- fromJSON(file="/home/rdecoupe/Documents/TETIS/projet/aidmoit/collect/output/meta/meta.json")
 
 # Browse datasources and create MD
+iterator = 0
 for (service in services$id) {
   print(paste0("Working on: ", services$datasetName[service]))
   metadata_id <- services$uuid[service]
@@ -36,7 +43,7 @@ for (service in services$id) {
   ## identification
   ident <- ISODataIdentification$new()
   ident$setAbstract(paste(services$datasetName[service]))
-  ident$setLanguage("fra")
+  ident$setLanguage("eng")
   # for (topic in unlist(strsplit(paste(services$topic[service]), ", "))){
   #   ident$addTopicCategory(topic)
   # }
@@ -49,21 +56,25 @@ for (service in services$id) {
   }
   ident$addKeywords(dynamic_keywords)
   
-    # #add link to data access
-    # distrib <- ISODistribution$new()
-    # dto <- ISODigitalTransferOptions$new()
-    # for (link in unlist(strsplit(paste(services$web.access[service]), ", "))){
-    #   # Remove paranthesis
-    #   tuple <- gsub('\\(',"",link)
-    #   tuple <- gsub('\\)',"",tuple)
-    #   newURL <- ISOOnlineResource$new()
-    #   newURL$setName(paste0(strsplit(paste(tuple), " @ ")[[1]][1]," :"))
-    #   newURL$setLinkage(strsplit(paste(tuple), " @ ")[[1]][2])
-    #   newURL$setProtocol("WWW:LINK-1.0-http--link")
-    #   dto$addOnlineResource(newURL)
-    # }
-    # distrib$setDigitalTransferOptions(dto)
-    # md$setDistributionInfo(distrib)
+    # add link to data access
+    distrib <- ISODistribution$new()
+    dto <- ISODigitalTransferOptions$new()
+    for (node in json_data){
+      if(node$idCSV == iterator){
+        ressources = basename(node$data)
+        print(str(ressources))
+        for (ressource in ressources){
+          newURL <- ISOOnlineResource$new()
+          newURL$setName(paste0(ressource))
+          newURL$setLinkage(paste0("http://10.0.0.10:9870/webhdfs/v1/", paste0(ressource), "?op=OPEN"))
+          newURL$setProtocol("WWW:LINK-1.0-http--link")
+          dto$addOnlineResource(newURL)
+          print(ressource)
+        }
+        distrib$setDigitalTransferOptions(dto)
+        md$setDistributionInfo(distrib)
+      }
+    }
     
     # Title and identification
     ct <- ISOCitation$new()
@@ -108,11 +119,12 @@ for (service in services$id) {
     md$addIdentificationInfo(ident)
 
     
-    ## Insert or update
+    # Insert or update
     # An update has to be done based on the internal Geonetwork id (that can be queried as well)
     created = gn$insertMetadata(
       xml = md$encode(),
       group = "1",
       category = "dataset"
     )
+    iterator = iterator +1 
 }
